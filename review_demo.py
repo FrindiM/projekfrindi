@@ -1,3 +1,4 @@
+from glob import glob
 import tkinter
 from tkinter import *
 from tkinter import messagebox as mess
@@ -243,11 +244,63 @@ def getImagesAndLabels(path):
 ###########################################################################################
 #$$$$$$$$$$$$$
 def TrackImages():
+    #Kedipan mata
+    def blink():
+        print("Start")
+        cap = cv2.VideoCapture(0)
+
+        detector = dlib.get_frontal_face_detector()
+        predictor = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat')
+
+        def eye_aspect_ratio(eye):
+            A = distance.euclidean(eye[1], eye[5])
+            B = distance.euclidean(eye[2], eye[4])
+
+            C = distance.euclidean(eye[0], eye[3])
+            eye = (A + B) / (2.0 * C)
+
+            return eye
+
+        global count
+        count = 0
+        global total
+        total = 0
+
+        while True:
+            success,img = cap.read()
+            imgGray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+            faces = detector(imgGray)
+
+            for face in faces:
+                landmarks = predictor(imgGray,face)
+
+                landmarks = face_utils.shape_to_np(landmarks)
+                leftEye = landmarks[42:48]
+                rightEye = landmarks[36:42]
+
+                leftEye = eye_aspect_ratio(leftEye)
+                rightEye = eye_aspect_ratio(rightEye)
+
+                eye = (leftEye + rightEye) / 2.0
+
+                if eye<0.3:
+                    count+=1
+                else:
+                    if count>=3:
+                        total+=1
+
+                    count=0
+                
+            cv2.putText(img, "Blink Count: {}".format(total), (10, 30),cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+            cv2.imshow('Video',img)
+            if cv2.waitKey(1) & 0xff==ord('q'):
+                break
+        print("Finish")
+    
+    #funsinyA
     check_haarcascadefile()
     assure_path_exists("Login/")
     assure_path_exists("StudentDetails/")
-    for k in tbl.get_children():
-        tbl.delete(k)
     msg = ''
     i = 0
     j = 0
@@ -312,69 +365,17 @@ def TrackImages():
             writer.writerow(col_names)
             writer.writerow(login)
         csvFile1.close()
-    with open("Login\Login_" + date + ".csv", 'r') as csvFile1:
-        reader1 = csv.reader(csvFile1)
-        for lines in reader1:
-            i = i + 1
-            if (i > 1):
-                if (i % 2 != 0):
-                    iidd = str(lines[0]) + '   '
-                    tbl.insert('', 0, text=iidd, values=(str(lines[2]), str(lines[4]), str(lines[6])))
+    # with open("Login\Login_" + date + ".csv", 'r') as csvFile1:
+    #     reader1 = csv.reader(csvFile1)
+    #     for lines in reader1:
+    #         i = i + 1
+    #         if (i > 1):
+    #             if (i % 2 != 0):
+    #                 iidd = str(lines[0]) + '   '
+    #                 tbl.insert('', 0, text=iidd, values=(str(lines[2]), str(lines[4]), str(lines[6])))
     csvFile1.close()
     cam.release()
     cv2.destroyAllWindows()
-
-
-#blink detection=====================================
-def blink():
-    print("Start")
-    cap = cv2.VideoCapture(0)
-
-    detector = dlib.get_frontal_face_detector()
-    predictor = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat')
-
-    def eye_aspect_ratio(eye):
-        A = distance.euclidean(eye[1], eye[5])
-        B = distance.euclidean(eye[2], eye[4])
-
-        C = distance.euclidean(eye[0], eye[3])
-        eye = (A + B) / (2.0 * C)
-
-        return eye
-
-    count = 0
-    total = 0
-
-    while True:
-        success,img = cap.read()
-        imgGray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-        faces = detector(imgGray)
-
-        for face in faces:
-            landmarks = predictor(imgGray,face)
-
-            landmarks = face_utils.shape_to_np(landmarks)
-            leftEye = landmarks[42:48]
-            rightEye = landmarks[36:42]
-
-            leftEye = eye_aspect_ratio(leftEye)
-            rightEye = eye_aspect_ratio(rightEye)
-
-            eye = (leftEye + rightEye) / 2.0
-
-            if eye<0.3:
-                count+=1
-            else:
-                if count>=3:
-                    total+=1
-
-                count=0
-            
-        cv2.putText(img, "Blink Count: {}".format(total), (10, 30),cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-        cv2.imshow('Video',img)
-        if cv2.waitKey(1) & 0xff==ord('q'):
-            break
-    print("Finish")
     
 
 
@@ -519,27 +520,27 @@ def halaman2():
     fr_head.place(x=0,y=0,relwidth=1)
     
     #Attandance table----------------------------
-    style = ttk.Style()
-    style.configure("mystyle.Treeview", highlightthickness=0, bd=0, font=('Calibri', 11)) # Modify the font of the body
-    style.configure("mystyle.Treeview.Heading",font=('times', 13,'bold')) # Modify the font of the headings
-    style.layout("mystyle.Treeview", [('mystyle.Treeview.treearea', {'sticky': 'nswe'})]) # Remove the borders
-    global tbl 
-    tbl= ttk.Treeview(frame,height =13,columns = ('name','date','time'),style="mystyle.Treeview")
-    tbl.column('#0',width=82)
-    tbl.column('name',width=130)
-    tbl.column('date',width=133)
-    tbl.column('time',width=133)
-    tbl.grid(row=2,column=0,padx=(0,0),pady=(50,0),columnspan=4)
-    tbl.heading('#0',text ='ID')
-    tbl.heading('name',text ='NAME')
-    tbl.heading('date',text ='DATE')
-    tbl.heading('time',text ='TIME')
+    # style = ttk.Style()
+    # style.configure("mystyle.Treeview", highlightthickness=0, bd=0, font=('Calibri', 11)) # Modify the font of the body
+    # style.configure("mystyle.Treeview.Heading",font=('times', 13,'bold')) # Modify the font of the headings
+    # style.layout("mystyle.Treeview", [('mystyle.Treeview.treearea', {'sticky': 'nswe'})]) # Remove the borders
+    # global tbl 
+    # tbl= ttk.Treeview(frame,height =13,columns = ('name','date','time'),style="mystyle.Treeview")
+    # tbl.column('#0',width=82)
+    # tbl.column('name',width=130)
+    # tbl.column('date',width=133)
+    # tbl.column('time',width=133)
+    # tbl.grid(row=2,column=0,padx=(0,0),pady=(50,0),columnspan=4)
+    # tbl.heading('#0',text ='ID')
+    # tbl.heading('name',text ='NAME')
+    # tbl.heading('date',text ='DATE')
+    # tbl.heading('time',text ='TIME')
     
-    #SCROLLBAR--------------------------------------------------
+    # #SCROLLBAR--------------------------------------------------
 
-    scroll=ttk.Scrollbar(frame,orient='vertical',command=tbl.yview)
-    scroll.grid(row=2,column=4,padx=(0,100),pady=(150,0),sticky='ns')
-    tbl.configure(yscrollcommand=scroll.set)
+    # scroll=ttk.Scrollbar(frame,orient='vertical',command=tbl.yview)
+    # scroll.grid(row=2,column=4,padx=(0,100),pady=(150,0),sticky='ns')
+    # tbl.configure(yscrollcommand=scroll.set)
     
     quitWindow = tkinter.Button(frame, text="Quit", command=window.destroy, fg="white", bg="#13059c", width=35, height=1, activebackground = "white", font=('times', 16, ' bold '))
     quitWindow.place(x=30, y=450,relwidth=0.89)
@@ -549,55 +550,7 @@ def halaman2():
     window.mainloop()
 
 
-def blink():
-    print("Start")
-    cap = cv2.VideoCapture(0)
 
-    detector = dlib.get_frontal_face_detector()
-    predictor = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat')
-
-    def eye_aspect_ratio(eye):
-        A = distance.euclidean(eye[1], eye[5])
-        B = distance.euclidean(eye[2], eye[4])
-
-        C = distance.euclidean(eye[0], eye[3])
-        eye = (A + B) / (2.0 * C)
-
-        return eye
-
-    count = 0
-    total = 0
-
-    while True:
-        success,img = cap.read()
-        imgGray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-        faces = detector(imgGray)
-
-        for face in faces:
-            landmarks = predictor(imgGray,face)
-
-            landmarks = face_utils.shape_to_np(landmarks)
-            leftEye = landmarks[42:48]
-            rightEye = landmarks[36:42]
-
-            leftEye = eye_aspect_ratio(leftEye)
-            rightEye = eye_aspect_ratio(rightEye)
-
-            eye = (leftEye + rightEye) / 2.0
-
-            if eye<0.3:
-                count+=1
-            else:
-                if count>=3:
-                    total+=1
-
-                count=0
-            
-        cv2.putText(img, "Blink Count: {}".format(total), (10, 30),cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-        cv2.imshow('Video',img)
-        if cv2.waitKey(1) & 0xff==ord('q'):
-            break
-    print("Finish")
 
 # run app
 halaman1()
