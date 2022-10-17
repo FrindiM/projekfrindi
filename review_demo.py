@@ -15,6 +15,7 @@ import time
 import dlib 
 from scipy.spatial import distance
 from imutils import face_utils
+from random import randint
 
 #Functions===========================================================
 
@@ -174,6 +175,8 @@ def TakeImages():
             faces = detector.detectMultiScale(gray, 1.05, 5)
             for (x, y, w, h) in faces:
                 cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                # cv2.putText(img, "Face Detected", (x, y-5), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255))
+                cv2.putText(img, str(str(sampleNum)+" images captured"), (x, y+h+20), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0))
                 # incrementing sample number
                 sampleNum = sampleNum + 1
                 # saving the captured face in the dataset folder TrainingImage
@@ -181,8 +184,8 @@ def TakeImages():
                             gray[y:y + h, x:x + w])
                 # display the frame
                 cv2.imshow('Taking Images', img)
-            # wait for 100 miliseconds
-            if cv2.waitKey(20) & 0xFF == ord('q'):
+            # wait for 1 miliseconds
+            if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
             # break if the sample number is morethan 100
             elif sampleNum > 100:
@@ -219,6 +222,7 @@ def TrainImages():
     res = "Profile Saved Successfully"
     message1.configure(text=res)
     message.configure(text='Total Registrations till now  : ' + str(ID[0]))
+    
 
 ############################################################################################3
 #$$$$$$$$$$$$$
@@ -245,58 +249,6 @@ def getImagesAndLabels(path):
 ###########################################################################################
 #$$$$$$$$$$$$$
 def TrackImages():
-    #Kedipan mata
-    def blink():
-        print("Start")
-        cap = cv2.VideoCapture(0)
-
-        detector = dlib.get_frontal_face_detector()
-        predictor = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat')
-
-        def eye_aspect_ratio(eye):
-            A = distance.euclidean(eye[1], eye[5])
-            B = distance.euclidean(eye[2], eye[4])
-
-            C = distance.euclidean(eye[0], eye[3])
-            eye = (A + B) / (2.0 * C)
-
-            return eye
-
-        global count
-        count = 0
-        global total
-        total = 0
-
-        while True:
-            success,img = cap.read()
-            imgGray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-            faces = detector(imgGray)
-
-            for face in faces:
-                landmarks = predictor(imgGray,face)
-
-                landmarks = face_utils.shape_to_np(landmarks)
-                leftEye = landmarks[42:48]
-                rightEye = landmarks[36:42]
-
-                leftEye = eye_aspect_ratio(leftEye)
-                rightEye = eye_aspect_ratio(rightEye)
-
-                eye = (leftEye + rightEye) / 2.0
-
-                if eye<0.3:
-                    count+=1
-                else:
-                    if count>=3:
-                        total+=1
-
-                    count=0
-                
-            cv2.putText(img, "Blink Count: {}".format(total), (10, 30),cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-            cv2.imshow('Video',img)
-            if cv2.waitKey(1) & 0xff==ord('q'):
-                break
-        print("Finish")
     
     #funsinyA
     check_haarcascadefile()
@@ -316,6 +268,26 @@ def TrackImages():
     faceCascade = cv2.CascadeClassifier(harcascadePath);
 
     cam = cv2.VideoCapture(0)
+    #blink
+    detector = dlib.get_frontal_face_detector()
+    predictor = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat')
+
+    def eye_aspect_ratio(eye):
+        A = distance.euclidean(eye[1], eye[5])
+        B = distance.euclidean(eye[2], eye[4])
+
+        C = distance.euclidean(eye[0], eye[3])
+        eye = (A + B) / (2.0 * C)
+
+        return eye
+
+    global count
+    count = 0
+    global total
+    total = 0
+    
+    
+    
     font = cv2.FONT_HERSHEY_SIMPLEX
     col_names = ['Id', '', 'Name', '', 'Date', '', 'Time']
     exists1 = os.path.isfile("StudentDetails\StudentDetails.csv")
@@ -330,6 +302,7 @@ def TrackImages():
         ret, im = cam.read()
         gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
         faces = faceCascade.detectMultiScale(gray, 1.2, 5)
+        faces1 = detector(gray)
         for (x, y, w, h) in faces:
             cv2.rectangle(im, (x, y), (x + w, y + h), (255, 0, 0), 2)
             serial, conf = recognizer.predict(gray[y:y + h, x:x + w])
@@ -349,8 +322,32 @@ def TrackImages():
                 Id = 'Unknown'
                 bb = str(Id)
             cv2.putText(im, str(bb), (x, y + h), font, 1, (0, 251, 255), 2)
+            
+        for face in faces1:
+            landmarks = predictor(gray,face)
+
+            landmarks = face_utils.shape_to_np(landmarks)
+            leftEye = landmarks[42:48]
+            rightEye = landmarks[36:42]
+
+            leftEye = eye_aspect_ratio(leftEye)
+            rightEye = eye_aspect_ratio(rightEye)
+
+            eye = (leftEye + rightEye) / 2.0
+
+            if eye<0.3:
+                count+=1
+            else:
+                if count>=3:
+                    total+=1
+
+                count=0
+        cv2.putText(im, "Blink Count: {}".format(total), (10, 30),cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
         cv2.imshow('Mengenali Wajah', im)
-        if (cv2.waitKey(1) == ord('q')):
+        
+        bil = randint(0, 5)
+        print (bil)
+        if (cv2.waitKey(1) == ord('q') or total == bil):
             break
     ts = time.time()
     date = datetime.datetime.fromtimestamp(ts).strftime('%d-%m-%Y')
@@ -374,7 +371,6 @@ def TrackImages():
 
 
 #Front End===========================================================
-
 window = Tk()
 window.title("Aplikasi login")
 window.overrideredirect(False)
@@ -385,119 +381,91 @@ label1 = Label( window, image = bg)
 # label1.config(width=2000)
 label1.place(x = 0,y = 0)
 # window.configure(background='#355454')
+#Help menubar----------------------------------------------
+menubar=Menu(window)
+help=Menu(menubar,tearoff=0)
+help.add_command(label="Ubah Password",command=change_pass)
+help.add_command(label="Contact Us",command=contact)
+help.add_separator()
+help.add_command(label="Exit",command=on_closing)
+menubar.add_cascade(label="Help",menu=help)
 
-#nafigasi pindah frame
-def raise_frame(frame):
-    frame.tkraise()
+# add ABOUT label to menubar-------------------------------
+menubar.add_command(label="About",command=about)
+
+#This line will attach our menu to window
+window.config(menu=menubar)
+
 
 def halaman1():
-    #Help menubar----------------------------------------------
-    menubar=Menu(window)
-    help=Menu(menubar,tearoff=0)
-    help.add_command(label="Ubah Password",command=change_pass)
-    help.add_command(label="Contact Us",command=contact)
-    help.add_separator()
-    help.add_command(label="Exit",command=on_closing)
-    menubar.add_cascade(label="Help",menu=help)
-
-    # add ABOUT label to menubar-------------------------------
-    menubar.add_command(label="About",command=about)
-
-    #This line will attach our menu to window
-    window.config(menu=menubar)
-
     #main window------------------------------------------------
-    message3 = tkinter.Label(window, text="Aplikasi Login" ,fg="white",bg="#355454" ,width=60 ,height=1,font=('times', 29, ' bold '))
+    message3 = tkinter.Label(window, text="Aplikasi Login" ,fg="white",bg="#3e065e" ,width=60 ,height=1,font=('times', 29, ' bold '), bd=2)
     message3.place(x=10, y=10,relwidth=1)
 
     #frames-------------------------------------------------
-    
-
-    frame2 = tkinter.Frame(window, bg="white")
-    frame2.place(relx=0.51, rely=0.15, relwidth=0.39, relheight=0.80)
+    global frame1
+    frame1 = tkinter.Frame(window, bg="#b342f5")
+    frame1.place(relx=0.5, rely=0.5, relwidth=0.60, relheight=0.80, anchor=CENTER)
 
     #frame_headder
     
-
-    fr_head2 = tkinter.Label(frame2, text="Login", fg="white",bg="black" ,font=('times', 17, ' bold ') )
+    fr_head2 = tkinter.Label(frame1, text="Login", fg="white",bg="#351e42" ,font=('times', 17, ' bold ') )
     fr_head2.place(x=0,y=0,relwidth=1)
-
-    
-    #Attendance frame
-    lbl3 = tkinter.Label(frame2, text="Attendance Table",width=20  ,fg="black"  ,bg="white"  ,height=1 ,font=('times', 17, ' bold '))
-    lbl3.place(x=100, y=115)
-
-    
 
     #BUTTONS----------------------------------------------
 
+    trackImg = tkinter.Button(frame1, text="Processed Login", command=TrackImages, fg="#3e065e", bg="white", height=1, activebackground = "white" ,font=('times', 16, ' bold '))
+    trackImg.place(relx=0.5, rely=0.2, anchor=CENTER,relwidth=0.40)
+
+    quitWindow = tkinter.Button(frame1, text="Quit", command=window.destroy, fg="#3e065e", bg="white", width=35, height=1, activebackground = "white", font=('times', 16, ' bold '))
+    quitWindow.place(relx=0.5, rely=0.4, anchor=CENTER,relwidth=0.40)
     
-
-    trackImg = tkinter.Button(frame2, text="Processed Login", command=TrackImages, fg="black", bg="#00aeff", height=1, activebackground = "white" ,font=('times', 16, ' bold '))
-    trackImg.place(x=30,y=60,relwidth=0.89)
-
-    quitWindow = tkinter.Button(frame2, text="Quit", command=window.destroy, fg="white", bg="#13059c", width=35, height=1, activebackground = "white", font=('times', 16, ' bold '))
-    quitWindow.place(x=30, y=450,relwidth=0.89)
-
-
+    moveee = tkinter.Button(frame1, text="Register", command=halaman2, fg="#3e065e", bg="white", width=35, height=1, activebackground = "white", font=('times', 16, ' bold '))
+    moveee.place(relx=0.5, rely=0.3, anchor=CENTER,relwidth=0.40)
+    
     #closing lines------------------------------------------------
     window.protocol("WM_DELETE_WINDOW", on_closing)
     window.mainloop()
 
 def halaman2():
     
-    #Help menubar----------------------------------------------
-    menubar=Menu(window)
-    help=Menu(menubar,tearoff=0)
-    help.add_command(label="Ubah Password",command=change_pass)
-    help.add_command(label="Contact Us",command=contact)
-    help.add_separator()
-    help.add_command(label="Exit",command=on_closing)
-    menubar.add_cascade(label="Help",menu=help)
-
-    # add ABOUT label to menubar-------------------------------
-    menubar.add_command(label="About",command=about)
-
-    #This line will attach our menu to window
-    window.config(menu=menubar)
-
     #main window------------------------------------------------
     message3 = tkinter.Label(window, text="Aplikasi Login" ,fg="white",bg="#355454" ,width=60 ,height=1,font=('times', 29, ' bold '))
     message3.place(x=10, y=10,relwidth=1)
     
     #frame
     
-    frame1 = tkinter.Frame(window, bg="white")
-    frame1.place(relx=0.11, rely=0.15, relwidth=0.39, relheight=0.80)
+    frame2 = tkinter.Frame(window, bg="white")
+    frame2.place(relx=0.5, rely=0.5, relwidth=0.60, relheight=0.80, anchor=CENTER)
     
-    fr_head1 = tkinter.Label(frame1, text="Register", fg="white",bg="black" ,font=('times', 17, ' bold ') )
+    fr_head1 = tkinter.Label(frame2, text="Register", fg="white",bg="black" ,font=('times', 17, ' bold ') )
     fr_head1.place(x=0,y=0,relwidth=1)
     
     #registretion frame
-    lbl = tkinter.Label(frame1, text="Enter ID",width=20  ,height=1  ,fg="black"  ,bg="white" ,font=('times', 17, ' bold ') )
-    lbl.place(x=0, y=55)
+    lbl = tkinter.Label(frame2, text="Enter ID",width=20  ,height=1  ,fg="black"  ,bg="white" ,font=('times', 17, ' bold ') )
+    lbl.place(relx=0.5, rely=0.1, anchor=CENTER,)
 
     global txt
-    txt = tkinter.Entry(frame1,width=32 ,fg="black",bg="#e1f2f2",highlightcolor="#00aeff",highlightthickness=3,font=('times', 15, ' bold '))
-    txt.place(x=55, y=88,relwidth=0.75)
+    txt = tkinter.Entry(frame2,width=32 ,fg="black",bg="#e1f2f2",highlightcolor="#00aeff",highlightthickness=3,font=('times', 15, ' bold '))
+    txt.place(relx=0.5, rely=0.2, anchor=CENTER,relwidth=0.75)
 
-    lbl2 = tkinter.Label(frame1, text="Enter Name",width=20  ,fg="black"  ,bg="white" ,font=('times', 17, ' bold '))
-    lbl2.place(x=0, y=140)
+    lbl2 = tkinter.Label(frame2, text="Enter Name",width=20  ,fg="black"  ,bg="white" ,font=('times', 17, ' bold '))
+    lbl2.place(relx=0.5, rely=0.3, anchor=CENTER,)
     global txt2
-    txt2 = tkinter.Entry(frame1,width=32 ,fg="black",bg="#e1f2f2",highlightcolor="#00aeff",highlightthickness=3,font=('times', 15, ' bold ')  )
-    txt2.place(x=55, y=173,relwidth=0.75)
+    txt2 = tkinter.Entry(frame2,width=32 ,fg="black",bg="#e1f2f2",highlightcolor="#00aeff",highlightthickness=3,font=('times', 15, ' bold ')  )
+    txt2.place(relx=0.5, rely=0.4, anchor=CENTER,relwidth=0.75)
 
     global message0
-    message0=tkinter.Label(frame1,text="Follow the steps...",bg="white" ,fg="black"  ,width=39 ,height=1,font=('times', 16, ' bold '))
-    message0.place(x=7,y=275)
+    message0=tkinter.Label(frame2,text="Follow the steps...",bg="white" ,fg="black"  ,width=39 ,height=1,font=('times', 16, ' bold '))
+    message0.place(relx=0.5, rely=0.6, anchor=CENTER,)
 
     global message1
-    message1 = tkinter.Label(frame1, text="1)Take Images  ===> 2)Save Profile" ,bg="white" ,fg="black"  ,width=39 ,height=1, activebackground = "yellow" ,font=('times', 15, ' bold '))
-    message1.place(x=7, y=300)
+    message1 = tkinter.Label(frame2, text="1)Take Images  ===> 2)Save Profile" ,bg="white" ,fg="black"  ,width=39 ,height=1, activebackground = "yellow" ,font=('times', 15, ' bold '))
+    message1.place(relx=0.5, rely=0.7, anchor=CENTER,)
 
     global message
-    message = tkinter.Label(frame1, text="" ,bg="white" ,fg="black"  ,width=39,height=1, activebackground = "yellow" ,font=('times', 16, ' bold '))
-    message.place(x=7, y=500)
+    message = tkinter.Label(frame2, text="" ,bg="white" ,fg="black"  ,width=39,height=1, activebackground = "yellow" ,font=('times', 16, ' bold '))
+    message.place(relx=0.5, rely=0.10, anchor=CENTER,)
     
     #Display total registration----------
     res=0
@@ -513,16 +481,19 @@ def halaman2():
         res = 0
     message.configure(text='Total Registrations : '+str(res))
     
-    clearButton = tkinter.Button(frame1, text="Clear", command=clear, fg="white", bg="#13059c", width=11, activebackground = "white", font=('times', 12, ' bold '))
-    clearButton.place(x=55, y=230,relwidth=0.29)
+    clearButton = tkinter.Button(frame2, text="Clear", command=clear, fg="white", bg="#13059c", width=11, activebackground = "white", font=('times', 12, ' bold '))
+    clearButton.place(relx=0.2, rely=0.5, anchor=CENTER,relwidth=0.29)
 
-    takeImg = tkinter.Button(frame1, text="Take Images", command=TakeImages, fg="black", bg="#00aeff", width=34, height=1, activebackground = "white", font=('times', 16, ' bold '))
-    takeImg.place(x=30, y=350,relwidth=0.89)
+    kembali = tkinter.Button(frame2, text="Kembali", command=halaman1, fg="white", bg="#13059c", width=11, activebackground = "white", font=('times', 12, ' bold '))
+    kembali.place(relx=0.8, rely=0.5, anchor=CENTER,relwidth=0.29)
 
-    trainImg = tkinter.Button(frame1, text="Save Profile", command=psw, fg="black", bg="#00aeff", width=34, height=1, activebackground = "white", font=('times', 16, ' bold '))
-    trainImg.place(x=30, y=430,relwidth=0.89)
+    takeImg = tkinter.Button(frame2, text="Take Images", command=TakeImages, fg="black", bg="#00aeff", width=34, height=1, activebackground = "white", font=('times', 16, ' bold '))
+    takeImg.place(relx=0.5, rely=0.8, anchor=CENTER,relwidth=0.89)
+
+    trainImg = tkinter.Button(frame2, text="Save Profile", command=psw, fg="black", bg="#00aeff", width=34, height=1, activebackground = "white", font=('times', 16, ' bold '))
+    trainImg.place(relx=0.5, rely=0.9, anchor=CENTER,relwidth=0.89)
     
-    # quitWindow = tkinter.Button(frame1, text="Quit", command=window.destroy, fg="white", bg="#13059c", width=35, height=1, activebackground = "white", font=('times', 16, ' bold '))
+    # quitWindow = tkinter.Button(frame2, text="Quit", command=window.destroy, fg="white", bg="#13059c", width=35, height=1, activebackground = "white", font=('times', 16, ' bold '))
     # quitWindow.place(x=30, y=450,relwidth=0.89)
     
     #closing lines------------------------------------------------
@@ -531,6 +502,5 @@ def halaman2():
 
 
 
-
 # run app
-halaman2()
+halaman1()
