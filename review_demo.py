@@ -46,7 +46,7 @@ def assure_path_exists(path):
 
 #check for haarcascade file
 def check_haarcascadefile():
-    exists = os.path.isfile("haarcascade_frontalface_default.xml")
+    exists = os.path.isfile("model/haarcascade_frontalface_default.xml")
     if exists:
         pass
     else:
@@ -145,19 +145,19 @@ def psw():
 def TakeImages():
     check_haarcascadefile()
     columns = ['SERIAL NO.', '', 'ID', '', 'NAME']
-    assure_path_exists("StudentDetails/")
+    assure_path_exists(r"User/")
     assure_path_exists("TrainingImage/")
     serial = 0
-    exists = os.path.isfile("StudentDetails\StudentDetails.csv")
+    exists = os.path.isfile(r"User\User.csv")
     if exists:
-        with open("StudentDetails\StudentDetails.csv", 'r') as csvFile1:
+        with open(r"User\User.csv", 'r') as csvFile1:
             reader1 = csv.reader(csvFile1)
             for l in reader1:
                 serial = serial + 1
         serial = (serial // 2)
         csvFile1.close()
     else:
-        with open("StudentDetails\StudentDetails.csv", 'a+') as csvFile1:
+        with open(r"User\User.csv", 'a+') as csvFile1:
             writer = csv.writer(csvFile1)
             writer.writerow(columns)
             serial = 1
@@ -166,7 +166,7 @@ def TakeImages():
     name = (txt2.get())
     if ((name.isalpha()) or (' ' in name)):
         cam = cv2.VideoCapture(0)
-        harcascadePath = "haarcascade_frontalface_default.xml"
+        harcascadePath = "model/haarcascade_frontalface_default.xml"
         detector = cv2.CascadeClassifier(harcascadePath)
         sampleNum = 0
         while (True):
@@ -194,7 +194,7 @@ def TakeImages():
         cv2.destroyAllWindows()
         res = "Images Taken for ID : " + Id
         row = [serial, '', Id, '', name]
-        with open('StudentDetails\StudentDetails.csv', 'a+') as csvFile:
+        with open(r'User\User.csv', 'a+') as csvFile:
             writer = csv.writer(csvFile)
             writer.writerow(row)
         csvFile.close()
@@ -210,7 +210,7 @@ def TrainImages():
     check_haarcascadefile()
     assure_path_exists("Pass_Train/")
     recognizer = cv2.face_LBPHFaceRecognizer.create()
-    harcascadePath = "haarcascade_frontalface_default.xml"
+    harcascadePath = "model/haarcascade_frontalface_default.xml"
     detector = cv2.CascadeClassifier(harcascadePath)
     faces, ID = getImagesAndLabels("TrainingImage")
     try:
@@ -253,7 +253,7 @@ def TrackImages():
     #funsinyA
     check_haarcascadefile()
     assure_path_exists("Login/")
-    assure_path_exists("StudentDetails/")
+    assure_path_exists(r"User/")
     msg = ''
     i = 0
     j = 0
@@ -264,13 +264,13 @@ def TrackImages():
     else:
         mess._show(title='Data Missing', message='Please click on Save Profile to reset data!!')
         return
-    harcascadePath = "haarcascade_frontalface_default.xml"
+    harcascadePath = "model/haarcascade_frontalface_default.xml"
     faceCascade = cv2.CascadeClassifier(harcascadePath);
 
     cam = cv2.VideoCapture(0)
     #blink
     detector = dlib.get_frontal_face_detector()
-    predictor = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat')
+    predictor = dlib.shape_predictor('model/shape_predictor_68_face_landmarks.dat')
 
     def eye_aspect_ratio(eye):
         A = distance.euclidean(eye[1], eye[5])
@@ -291,9 +291,9 @@ def TrackImages():
     
     font = cv2.FONT_HERSHEY_SIMPLEX
     col_names = ['Id', '', 'Name', '', 'Date', '', 'Time']
-    exists1 = os.path.isfile("StudentDetails\StudentDetails.csv")
+    exists1 = os.path.isfile(r"User\User.csv")
     if exists1:
-        df = pd.read_csv("StudentDetails\StudentDetails.csv")
+        df = pd.read_csv(r"User\User.csv")
     else:
         mess._show(title='Details Missing', message='Students details are missing, please check!')
         cam.release()
@@ -343,11 +343,11 @@ def TrackImages():
                     total+=1
 
                 count=0
-        cv2.putText(im, "Blink Count: {}".format(total), (10, 30),cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        cv2.putText(im, "Jumlah Kedipam: {}".format(total), (10, 90),cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        cv2.putText(im, "Berkedip Sebanyak: {}".format(bil), (10, 30),cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
         cv2.imshow('Mengenali Wajah', im)
         
         
-        print (bil)
         if (cv2.waitKey(1) == ord('q') or total == bil):
             break
     ts = time.time()
@@ -377,7 +377,7 @@ window.title("Aplikasi login")
 window.overrideredirect(False)
 window.geometry("{0}x{1}+0+0".format(window.winfo_screenwidth(), window.winfo_screenheight()))
 window.resizable(True,True)
-bg = PhotoImage( file = "bg2.png")
+bg = PhotoImage( file = "Gambar/bg2.png")
 label1 = Label( window, image = bg)
 # label1.config(width=2000)
 label1.place(x = 0,y = 0)
@@ -470,9 +470,9 @@ def halaman2():
     
     #Display total registration----------
     res=0
-    exists = os.path.isfile("StudentDetails\StudentDetails.csv")
+    exists = os.path.isfile(r"User\User.csv")
     if exists:
-        with open("StudentDetails\StudentDetails.csv", 'r') as csvFile1:
+        with open(r"User\User.csv", 'r') as csvFile1:
             reader1 = csv.reader(csvFile1)
             for l in reader1:
                 res = res + 1
