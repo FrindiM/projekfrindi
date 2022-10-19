@@ -285,6 +285,7 @@ def TrackImages():
     count = 0
     global total
     total = 0
+    bil = randint(1, 5)
     
     
     
@@ -345,7 +346,7 @@ def TrackImages():
         cv2.putText(im, "Blink Count: {}".format(total), (10, 30),cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
         cv2.imshow('Mengenali Wajah', im)
         
-        bil = randint(0, 5)
+        
         print (bil)
         if (cv2.waitKey(1) == ord('q') or total == bil):
             break
@@ -376,7 +377,7 @@ window.title("Aplikasi login")
 window.overrideredirect(False)
 window.geometry("{0}x{1}+0+0".format(window.winfo_screenwidth(), window.winfo_screenheight()))
 window.resizable(True,True)
-bg = PhotoImage( file = "png.png")
+bg = PhotoImage( file = "bg2.png")
 label1 = Label( window, image = bg)
 # label1.config(width=2000)
 label1.place(x = 0,y = 0)
@@ -399,28 +400,28 @@ window.config(menu=menubar)
 
 def halaman1():
     #main window------------------------------------------------
-    message3 = tkinter.Label(window, text="Aplikasi Login" ,fg="white",bg="#3e065e" ,width=60 ,height=1,font=('times', 29, ' bold '), bd=2)
+    message3 = tkinter.Label(window, text="Aplikasi Login" ,fg="white",bg="#12324b" ,width=60 ,height=1,font=('times', 29, ' bold '), bd=2)
     message3.place(x=10, y=10,relwidth=1)
 
     #frames-------------------------------------------------
     global frame1
-    frame1 = tkinter.Frame(window, bg="#b342f5")
+    frame1 = tkinter.Frame(window, bg="#3ca2f5")
     frame1.place(relx=0.5, rely=0.5, relwidth=0.60, relheight=0.80, anchor=CENTER)
 
     #frame_headder
     
-    fr_head2 = tkinter.Label(frame1, text="Login", fg="white",bg="#351e42" ,font=('times', 17, ' bold ') )
+    fr_head2 = tkinter.Label(frame1, text="Login", fg="white",bg="#276aa0" ,font=('times', 17, ' bold ') )
     fr_head2.place(x=0,y=0,relwidth=1)
 
     #BUTTONS----------------------------------------------
 
-    trackImg = tkinter.Button(frame1, text="Processed Login", command=TrackImages, fg="#3e065e", bg="white", height=1, activebackground = "white" ,font=('times', 16, ' bold '))
+    trackImg = tkinter.Button(frame1, text="Processed Login", command=TrackImages, fg="black", bg="white", height=1, activebackground = "white" ,font=('times', 16, ' bold '))
     trackImg.place(relx=0.5, rely=0.2, anchor=CENTER,relwidth=0.40)
 
-    quitWindow = tkinter.Button(frame1, text="Quit", command=window.destroy, fg="#3e065e", bg="white", width=35, height=1, activebackground = "white", font=('times', 16, ' bold '))
+    quitWindow = tkinter.Button(frame1, text="Quit", command=window.destroy, fg="black", bg="white", width=35, height=1, activebackground = "white", font=('times', 16, ' bold '))
     quitWindow.place(relx=0.5, rely=0.4, anchor=CENTER,relwidth=0.40)
     
-    moveee = tkinter.Button(frame1, text="Register", command=halaman2, fg="#3e065e", bg="white", width=35, height=1, activebackground = "white", font=('times', 16, ' bold '))
+    moveee = tkinter.Button(frame1, text="Register", command=halaman2, fg="black", bg="white", width=35, height=1, activebackground = "white", font=('times', 16, ' bold '))
     moveee.place(relx=0.5, rely=0.3, anchor=CENTER,relwidth=0.40)
     
     #closing lines------------------------------------------------
