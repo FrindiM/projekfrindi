@@ -8,7 +8,7 @@ import os
 import cv2
 import csv
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageTk
 import pandas as pd
 import datetime
 import time
@@ -16,12 +16,13 @@ import dlib
 from scipy.spatial import distance
 from imutils import face_utils
 from random import randint
+import sys
 
 #Functions=========================================================== 
 
 #keluar
 def on_closing():
-    if mess.askyesno("Quit", "You are exiting window.Do you want to quit?"):
+    if mess.askyesno("Quit", "Apakah ingin keluar aplikasi?"):
         window.destroy()
 #kontak
 def contact():
@@ -35,7 +36,7 @@ def about():
 def clear():
     txt.delete(0, 'end')
     txt2.delete(0, 'end')
-    res = "1)Take Images  ===> 2)Save Profile"
+    res = "1)Ambil Gambar  ===> 2)Simpan"
     message1.configure(text=res)
 
 #Cek Path
@@ -62,13 +63,13 @@ def save_pass():
         str = tf.read()
     else:
         master.destroy()
-        new_pas = tsd.askstring('Password not set', 'Please enter a new password below', show='*')
+        new_pas = tsd.askstring('Password not set', 'Silakan masukan katasandi baru', show='*')
         if new_pas == None:
-            mess._show(title='Null Password Entered', message='Password not set.Please try again!')
+            mess._show(title='Null Password Entered', message='Katasandi tidak diatur, silakan coba lagi!')
         else:
             tf = open("Pass_Train\pass.txt", "w")
             tf.write(new_pas)
-            mess._show(title='Password Registered!', message='New password was registered successfully!')
+            mess._show(title='Password Registered!', message='Katasandi baru sukses di atur!')
             return
     op = (old.get())
     newp= (new.get())
@@ -78,12 +79,12 @@ def save_pass():
             txf = open("Pass_Train\pass.txt", "w")
             txf.write(newp)
         else:
-            mess._show(title='Error', message='Confirm new password again!!!')
+            mess._show(title='Error', message='Masukan lagi katasandi baru!!!')
             return
     else:
-        mess._show(title='Wrong Password', message='Please enter correct old password.')
+        mess._show(title='Wrong Password', message='Silakan masukan katasandi lama yang benar')
         return
-    mess._show(title='Password Changed', message='Password changed successfully!!')
+    mess._show(title='Password Changed', message='Katasandi berhasil diubah!!')
     master.destroy()
 
 #ganti password
@@ -125,11 +126,11 @@ def psw():
     else:
         new_pas = tsd.askstring('Old Password not found', 'Please enter a new password below', show='*')
         if new_pas == None:
-            mess._show(title='No Password Entered', message='Password not set!! Please try again')
+            mess._show(title='No Password Entered', message='Katasandi tidak diatur, Silakan masukan kembali')
         else:
             tf = open("Pass_Train\pass.txt", "w")
             tf.write(new_pas)
-            mess._show(title='Password Registered', message='New password was registered successfully!!')
+            mess._show(title='Password Registered', message='Kantasandi baru berhasil diatur!!')
             return
     password = tsd.askstring('Password', 'Enter Password', show='*')
     if (password == str_pass):
@@ -138,7 +139,24 @@ def psw():
     elif (password == None):
         pass
     else:
-        mess._show(title='Wrong Password', message='You have entered wrong password')
+        mess._show(title='Wrong Password', message='Masukan katasandi yang benar!')
+
+def psw2():
+    assure_path_exists("Pass_Train/")
+    exists1 = os.path.isfile("Pass_Train\pass.txt")
+    if exists1:
+        tf = open("Pass_Train\pass.txt", "r")
+        str_pass = tf.read()
+    else:
+        mess._show(title='No Password Entered', message='Silakan Daftar Untuk Menyetel Kata sandi!')
+    password = tsd.askstring('Password', 'Enter Password', show='*')
+    if (password == str_pass):
+        TrackImages()
+
+    elif (password == None):
+        pass
+    else:
+        mess._show(title='Wrong Password', message='Masukan Kata sandi yang benar')
 
 
 #ambil gambar
@@ -246,6 +264,32 @@ def getImagesAndLabels(path):
         Ids.append(ID)
     return faces, Ids
 
+#rectangle style
+def draw_ped(img, label, x0, y0, xt, yt, color=(255,127,0), text_color=(255,255,255)):
+
+    (w, h), baseline = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+    cv2.rectangle(img,
+                  (x0, y0 + baseline),  
+                  (max(xt, x0 + w), yt), 
+                  color, 
+                  2)
+    cv2.rectangle(img,
+                  (x0, y0 - h),  
+                  (x0 + w, y0 + baseline), 
+                  color, 
+                  -1)  
+    cv2.putText(img, 
+                label, 
+                (x0, y0),                   
+                cv2.FONT_HERSHEY_SIMPLEX,     
+                0.5,                          
+                text_color,                
+                1,
+                cv2.LINE_AA) 
+    cv2.putText(img, "Jumlah Kedipam: {}".format(total), (10, 90),cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+    cv2.putText(img, "Berkedip Sebanyak: {}".format(bil), (10, 30),cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+    return img
+
 ###########################################################################################
 #mengenali wajah
 def TrackImages():
@@ -285,6 +329,7 @@ def TrackImages():
     count = 0
     global total
     total = 0
+    global bil
     bil = randint(1, 5)
     masuk = False
     
@@ -296,7 +341,7 @@ def TrackImages():
     if exists1:
         df = pd.read_csv(r"User\User.csv")
     else:
-        mess._show(title='Details Missing', message='Students details are missing, please check!')
+        mess._show(title='Details Missing', message='User details are missing, please check!')
         cam.release()
         cv2.destroyAllWindows()
         window.destroy()
@@ -305,27 +350,7 @@ def TrackImages():
         gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
         faces = faceCascade.detectMultiScale(gray, 1.2, 5)
         faces1 = detector(gray)
-        for (x, y, w, h) in faces:
-            cv2.rectangle(im, (x, y), (x + w, y + h), (255, 0, 0), 2)
-            serial, conf = recognizer.predict(gray[y:y + h, x:x + w])
-            if (conf < 50):
-                ts = time.time()
-                date = datetime.datetime.fromtimestamp(ts).strftime('%d-%m-%Y')
-                timeStamp = datetime.datetime.fromtimestamp(ts).strftime('%H:%M:%S')
-                aa = df.loc[df['SERIAL NO.'] == serial]['NAME'].values
-                ID = df.loc[df['SERIAL NO.'] == serial]['ID'].values
-                ID = str(ID)
-                ID = ID[1:-1]
-                bb = str(aa)
-                bb = bb[2:-2]
-                login = [str(ID), '', bb, '', str(date), '', str(timeStamp)]
-                
-                masuk = True
-
-            else:
-                Id = 'Unknown'
-                bb = str(Id)
-            cv2.putText(im, str(bb), (x, y + h), font, 1, (0, 251, 255), 2)
+        
             
         for face in faces1:
             landmarks = predictor(gray,face)
@@ -346,16 +371,41 @@ def TrackImages():
                     total+=1
 
                 count=0
-        cv2.putText(im, "Jumlah Kedipam: {}".format(total), (10, 90),cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-        cv2.putText(im, "Berkedip Sebanyak: {}".format(bil), (10, 30),cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                
+        for (x, y, w, h) in faces:
+            # cv2.rectangle(im, (x, y), (x + w, y + h), (255, 0, 0), 2)
+            serial, conf = recognizer.predict(gray[y:y + h, x:x + w])
+            global bb
+            if (conf < 50):
+                ts = time.time()
+                date = datetime.datetime.fromtimestamp(ts).strftime('%d-%m-%Y')
+                timeStamp = datetime.datetime.fromtimestamp(ts).strftime('%H:%M:%S')
+                aa = df.loc[df['SERIAL NO.'] == serial]['NAME'].values
+                ID = df.loc[df['SERIAL NO.'] == serial]['ID'].values
+                ID = str(ID)
+                ID = ID[1:-1]
+                bb = str(aa)
+                bb = bb[2:-2]
+                login = [str(ID), '', bb, '', str(date), '', str(timeStamp)]
+                
+                masuk = True
+
+            else:
+                Id = 'Unknown'
+                bb = str(Id)
+            # cv2.putText(im, str(bb), (x, y + h), font, 1, (0, 251, 255), 2)
+            im = draw_ped(im, bb, x, y, x + w, y + h, color=(0,255,255), text_color=(50,50,50))
+            
+        
+        
         cv2.imshow('Mengenali Wajah', im)
+        
         
         
         if (cv2.waitKey(1) == ord('q') or total == bil):
             break
     
-    if masuk == True:
-        print("selamat datang \n anda berhasil !!!")
+        
     ts = time.time()
     date = datetime.datetime.fromtimestamp(ts).strftime('%d-%m-%Y')
     exists = os.path.isfile("Login\Login_" + date + ".csv")
@@ -374,8 +424,10 @@ def TrackImages():
     csvFile1.close()
     cam.release()
     cv2.destroyAllWindows()
+    if masuk == True:
+        print("selamat datang \nanda berhasil !!!")
+        halaman3()
     
-
 
 #Front End===========================================================
 window = Tk()
@@ -404,12 +456,18 @@ menubar.add_command(label="About",command=about)
 #This line will attach our menu to window
 window.config(menu=menubar)
 
+#main window------------------------------------------------
+message3 = tkinter.Label(window, text="Aplikasi Login" ,fg="white",bg="#12324b" ,width=60 ,height=1,font=('times', 29, ' bold '), bd=2)
+message3.place(x=10, y=10,relwidth=1)
+
+frame1 = tkinter.Frame()
+frame2 = tkinter.Frame()
+frame3 = tkinter.Frame()
+
 
 def halaman1():
-    #main window------------------------------------------------
-    message3 = tkinter.Label(window, text="Aplikasi Login" ,fg="white",bg="#12324b" ,width=60 ,height=1,font=('times', 29, ' bold '), bd=2)
-    message3.place(x=10, y=10,relwidth=1)
-
+    frame2.destroy()
+    frame3.destroy()
     #frames-------------------------------------------------
     global frame1
     frame1 = tkinter.Frame(window, bg="#3ca2f5")
@@ -422,7 +480,7 @@ def halaman1():
 
     #BUTTONS----------------------------------------------
 
-    trackImg = tkinter.Button(frame1, text="Processed Login", command=TrackImages, fg="black", bg="white", height=1, activebackground = "white" ,font=('times', 16, ' bold '))
+    trackImg = tkinter.Button(frame1, text="Processed Login", command=psw2, fg="black", bg="white", height=1, activebackground = "white" ,font=('times', 16, ' bold '))
     trackImg.place(relx=0.5, rely=0.2, anchor=CENTER,relwidth=0.40)
 
     quitWindow = tkinter.Button(frame1, text="Quit", command=window.destroy, fg="black", bg="white", width=35, height=1, activebackground = "white", font=('times', 16, ' bold '))
@@ -434,46 +492,42 @@ def halaman1():
     #closing lines------------------------------------------------
     window.protocol("WM_DELETE_WINDOW", on_closing)
     window.mainloop()
-
+    
 def halaman2():
-    
-    #main window------------------------------------------------
-    message3 = tkinter.Label(window, text="Aplikasi Login" ,fg="white",bg="#355454" ,width=60 ,height=1,font=('times', 29, ' bold '))
-    message3.place(x=10, y=10,relwidth=1)
-    
+    global frame2
+    frame1.destroy()
     #frame
+    frame2 = tkinter.Frame(window, bg="#3ca2f5")
+    frame2.place(relx=0.5, rely=0.5, relwidth=0.40, relheight=0.80, anchor=CENTER)
     
-    frame2 = tkinter.Frame(window, bg="white")
-    frame2.place(relx=0.5, rely=0.5, relwidth=0.60, relheight=0.80, anchor=CENTER)
-    
-    fr_head1 = tkinter.Label(frame2, text="Register", fg="white",bg="black" ,font=('times', 17, ' bold ') )
+    fr_head1 = tkinter.Label(frame2, text="Register", fg="white",bg="#276aa0" ,font=('times', 17, ' bold ') )
     fr_head1.place(x=0,y=0,relwidth=1)
     
     #registretion frame
-    lbl = tkinter.Label(frame2, text="Enter ID",width=20  ,height=1  ,fg="black"  ,bg="white" ,font=('times', 17, ' bold ') )
-    lbl.place(relx=0.5, rely=0.1, anchor=CENTER,)
+    lbl = tkinter.Label(frame2, text="Masukan ID dan Nama",width=20  ,height=1  ,fg="black"  ,bg="#3ca2f5" ,font=('times', 17, ' bold ') )
+    lbl.place(relx=0.5, rely=0.2, anchor=CENTER,)
 
     global txt
     txt = tkinter.Entry(frame2,width=32 ,fg="black",bg="#e1f2f2",highlightcolor="#00aeff",highlightthickness=3,font=('times', 15, ' bold '))
-    txt.place(relx=0.5, rely=0.2, anchor=CENTER,relwidth=0.75)
+    txt.place(relx=0.5, rely=0.3, anchor=CENTER,relwidth=0.75)
 
-    lbl2 = tkinter.Label(frame2, text="Enter Name",width=20  ,fg="black"  ,bg="white" ,font=('times', 17, ' bold '))
-    lbl2.place(relx=0.5, rely=0.3, anchor=CENTER,)
+    # lbl2 = tkinter.Label(frame2, text="Enter Name",width=20  ,fg="black"  ,bg="white" ,font=('times', 17, ' bold '))
+    # lbl2.place(relx=0.5, rely=0.3, anchor=CENTER,)
     global txt2
     txt2 = tkinter.Entry(frame2,width=32 ,fg="black",bg="#e1f2f2",highlightcolor="#00aeff",highlightthickness=3,font=('times', 15, ' bold ')  )
     txt2.place(relx=0.5, rely=0.4, anchor=CENTER,relwidth=0.75)
 
     global message0
-    message0=tkinter.Label(frame2,text="Follow the steps...",bg="white" ,fg="black"  ,width=39 ,height=1,font=('times', 16, ' bold '))
+    message0=tkinter.Label(frame2,text="Ikuti Langkah Berikut...!",bg="#3ca2f5" ,fg="black"  ,width=39 ,height=1,font=('times', 16, ' bold '))
     message0.place(relx=0.5, rely=0.6, anchor=CENTER,)
 
     global message1
-    message1 = tkinter.Label(frame2, text="1)Take Images  ===> 2)Save Profile" ,bg="white" ,fg="black"  ,width=39 ,height=1, activebackground = "yellow" ,font=('times', 15, ' bold '))
+    message1 = tkinter.Label(frame2, text="1)Ambil Gambar  ===> 2)Simpan Profil" ,bg="#3ca2f5" ,fg="black"  ,width=39 ,height=1, activebackground = "yellow" ,font=('times', 15, ' bold '))
     message1.place(relx=0.5, rely=0.7, anchor=CENTER,)
 
     global message
-    message = tkinter.Label(frame2, text="" ,bg="white" ,fg="black"  ,width=39,height=1, activebackground = "yellow" ,font=('times', 16, ' bold '))
-    message.place(relx=0.5, rely=0.10, anchor=CENTER,)
+    message = tkinter.Label(frame2, text="" ,bg="#3ca2f5" ,fg="black"  ,width=39,height=1, activebackground = "yellow" ,font=('times', 16, ' bold '))
+    message.place(relx=0.5, rely=0.1, anchor=CENTER,)
     
     #Display total registration----------
     res=0
@@ -490,16 +544,16 @@ def halaman2():
     message.configure(text='Total Registrations : '+str(res))
     
     clearButton = tkinter.Button(frame2, text="Clear", command=clear, fg="white", bg="#13059c", width=11, activebackground = "white", font=('times', 12, ' bold '))
-    clearButton.place(relx=0.2, rely=0.5, anchor=CENTER,relwidth=0.29)
+    clearButton.place(relx=0.3, rely=0.5, anchor=CENTER,relwidth=0.29)
 
     kembali = tkinter.Button(frame2, text="Kembali", command=halaman1, fg="white", bg="#13059c", width=11, activebackground = "white", font=('times', 12, ' bold '))
-    kembali.place(relx=0.8, rely=0.5, anchor=CENTER,relwidth=0.29)
+    kembali.place(relx=0.7, rely=0.5, anchor=CENTER,relwidth=0.29)
 
-    takeImg = tkinter.Button(frame2, text="Take Images", command=TakeImages, fg="black", bg="#00aeff", width=34, height=1, activebackground = "white", font=('times', 16, ' bold '))
-    takeImg.place(relx=0.5, rely=0.8, anchor=CENTER,relwidth=0.89)
+    takeImg = tkinter.Button(frame2, text="Ambil Gambar", command=TakeImages, fg="black", bg="#00aeff", width=34, height=1, activebackground = "white", font=('times', 16, ' bold '))
+    takeImg.place(relx=0.5, rely=0.8, anchor=CENTER,relwidth=0.40)
 
-    trainImg = tkinter.Button(frame2, text="Save Profile", command=psw, fg="black", bg="#00aeff", width=34, height=1, activebackground = "white", font=('times', 16, ' bold '))
-    trainImg.place(relx=0.5, rely=0.9, anchor=CENTER,relwidth=0.89)
+    trainImg = tkinter.Button(frame2, text="Simpan Profil", command=psw, fg="black", bg="#00aeff", width=34, height=1, activebackground = "white", font=('times', 16, ' bold '))
+    trainImg.place(relx=0.5, rely=0.9, anchor=CENTER,relwidth=0.40)
     
     # quitWindow = tkinter.Button(frame2, text="Quit", command=window.destroy, fg="white", bg="#13059c", width=35, height=1, activebackground = "white", font=('times', 16, ' bold '))
     # quitWindow.place(x=30, y=450,relwidth=0.89)
@@ -508,7 +562,30 @@ def halaman2():
     window.protocol("WM_DELETE_WINDOW", on_closing)
     window.mainloop()
 
+bb = 'Unknown'
+def halaman3():
+    frame1.destroy()
+    global frame3
+    if bb == 'Unknown':
+        frame3.destroy()
+        halaman1()
+    else:
+        frame1.destroy()
+        #frame
+        frame3 = tkinter.Frame(window, bg="#3ca2f5")
+        frame3.place(relx=0.5, rely=0.5, relwidth=0.60, relheight=0.80, anchor=CENTER)
+        
+        fr_head1 = tkinter.Label(frame3, text="Hallo  "+bb, fg="white",bg="#276aa0" ,font=('times', 17, ' bold ') )
+        fr_head1.place(x=0,y=0,relwidth=1)
+        kembali = tkinter.Button(frame3, text="Loguot", command=halaman1, fg="black", bg="#00aeff", width=34, height=1, activebackground = "white", font=('times', 16, ' bold '))
+        kembali.place(relx=0.5, rely=0.8, anchor=CENTER,relwidth=0.40)
 
-
+        keluar = tkinter.Button(frame3, text="Quit", command=window.destroy, fg="black", bg="#00aeff", width=34, height=1, activebackground = "white", font=('times', 16, ' bold '))
+        keluar.place(relx=0.5, rely=0.9, anchor=CENTER,relwidth=0.40)
+        print("selamat datang")
+        #closing lines------------------------------------------------
+        window.protocol("WM_DELETE_WINDOW", on_closing)
+        window.mainloop()
+    
 # run app
 halaman1()
